@@ -606,7 +606,7 @@ class _List:
         # is returned.
         return _Member(self._connection, response['location'])
 
-    def unsubscribe(self, email):
+    def unsubscribe(self, email, mode):
         """Unsubscribe an email address from a mailing list.
 
         :param address: The address to unsubscribe.
@@ -614,9 +614,10 @@ class _List:
         # In order to get the member object we need to
         # iterate over the existing member list
 
+        data = {'mode': mode}
         for member in self.members:
             if member.email == email:
-                self._connection.call(member.self_link, method='DELETE')
+                self._connection.call(member.self_link, data=data, method='DELETE')
                 break
         else:
             raise ValueError('%s is not a member address of %s' %
