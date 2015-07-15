@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 by the Free Software Foundation, Inc.
+	# Copyright (C) 2010-2015 by the Free Software Foundation, Inc.
 #
 # This file is part of mailman.client.
 #
@@ -27,14 +27,15 @@ __all__ = [
 
 import six
 import json
+import datetime
 
+from datetime import datetime as dt
 from base64 import b64encode
 from httplib2 import Http
 from mailmanclient import __version__
 from operator import itemgetter
 from six.moves.urllib_error import HTTPError
 from six.moves.urllib_parse import urlencode, urljoin
-
 
 DEFAULT_PAGE_ITEM_COUNT = 50
 
@@ -255,6 +256,33 @@ class Client:
         response, content = self._connection.call(
             'lists/{0}'.format(fqdn_listname), None, 'DELETE')
 
+    def count_unsubscriber(self, list_identifier, start_date=None, stop_date=None):
+        if start_date:
+            today = dt.today()
+            try:
+                start = dt.strptime(start_date, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError("Incorrect date format for the starting date, should be YYYY-MM-DD")
+            if start>today:
+                raise ValueError("The starting date should not be greater than present date")
+            if stop_date:
+                try:
+                   stop = dt.strptime(stop_date, "%Y-%m-%d")
+                except ValueError:
+                   raise ValueError("Incorrect date format for ending date, should be YYYY-MM-DD")
+                if start>stop:
+                    raise ValueError("The starting date should not be greater than ending date")
+                data = dict(start_date=start, stop_date=stop)
+            else:
+                data = dict(start_date=start, stop_date=today)
+            response, content = self._connection.call('unsubscriber/{0}'.format(list_identifier), data)
+        elif stop_date:
+            raise ValueError("Wrong Input: Only ending date provided")
+        else:   
+            response, content = self._connection.call(
+                'unsubscriber/{0}'.format(list_identifier))
+        return content['no_of_unsubscriber']
+        
 
 class _Domain:
 
@@ -606,7 +634,7 @@ class _List:
         # is returned.
         return _Member(self._connection, response['location'])
 
-    def unsubscribe(self, email, mode):
+    def unsubscribe(self, email, channel):
         """Unsubscribe an email address from a mailing list.
 
         :param address: The address to unsubscribe.
@@ -614,7 +642,7 @@ class _List:
         # In order to get the member object we need to
         # iterate over the existing member list
 
-        data = {'mode': mode}
+        data = {'channel': channel}
         for member in self.members:
             if member.email == email:
                 self._connection.call(member.self_link, data=data, method='DELETE')
