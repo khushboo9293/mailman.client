@@ -1,4 +1,4 @@
-	# Copyright (C) 2010-2015 by the Free Software Foundation, Inc.
+# Copyright (C) 2010-2015 by the Free Software Foundation, Inc.
 #
 # This file is part of mailman.client.
 #
@@ -257,6 +257,17 @@ class Client:
             'lists/{0}'.format(fqdn_listname), None, 'DELETE')
 
     def count_unsubscriber(self, list_identifier, start_date=None, stop_date=None):
+        """Client method that makes a connection to Mailman REST Api and fetches the 
+           number of unsubscribers for a given mailing list and for a time interval
+           (if specified)"""
+       
+        :param list_identifier: fqdn or list_id of the mailing list
+        :type list_identifier: str
+        :param start_date: the from date specified by admin to get count of unsubscribers
+        :type start_date: str
+        :param stop_date: the to date specified by admin to get count of unsubscribers
+        :type stop_date: str
+            
         if start_date:
             today = dt.today()
             try:
@@ -275,12 +286,14 @@ class Client:
                 data = dict(start_date=start, stop_date=stop)
             else:
                 data = dict(start_date=start, stop_date=today)
+            #POST request to Mailman REST with to and from date specified as parameters
             response, content = self._connection.call('unsubscriber/{0}'.format(list_identifier), data)
         elif stop_date:
             raise ValueError("Wrong Input: Only ending date provided")
         else:   
+            #GET request to Mailman REST with no dates specified
             response, content = self._connection.call(
-                'unsubscriber/{0}'.format(list_identifier))
+                'unsubscriber/{0}'.format(list_identifier))     
         return content['no_of_unsubscriber']
         
 
